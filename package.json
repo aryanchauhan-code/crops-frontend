@@ -10,6 +10,7 @@
   },
   "dependencies": {
     "@svg-maps/india": "^2.0.0",
+    "@svg-maps/world": "^2.0.0",
     "@tanstack/react-virtual": "^3.14.9",
     "axios": "^1.7.7",
     "cmdk": "^1.1.1",

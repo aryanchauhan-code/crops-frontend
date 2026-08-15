@@ -40,7 +40,7 @@ export default function RecordDetail({ record, titleField, onClose, onEdit }) {
   const hasProfile = PROFILE_FIELDS.some((f) => record[f])
 
   const tribe = record['Tribe / Ethnic Group (major consumers)']
-  const region = record['Region / State (typical)']
+  const region = record['Region / State (typical)'] || record['Province / Region (typical)'] || record['Country']
   const taste = record['Taste Profile']
   const aroma = record['Aroma Description']
   const myths = record['Associated Myths / Beliefs']
@@ -53,17 +53,20 @@ export default function RecordDetail({ record, titleField, onClose, onEdit }) {
   const product = classifyEndProduct(record['Major End Products'])
   const hasFlow = carb || microbe || product
 
+  const alcohol = record['Alcohol Content (% v/v)'] || record['Alcohol Content (%)']
   const badges = [
-    record['Fermentation Type'],
-    record['Alcohol Content (% v/v)'] && `${record['Alcohol Content (% v/v)']}% ABV`,
+    record['Fermentation Type'] || record['Type of Fermentation'],
+    alcohol && `${alcohol}% ABV`,
     record['pH (reported range)'] && `pH ${record['pH (reported range)']}`,
   ].filter(Boolean)
 
   const featuredKeys = new Set([
     titleField, 'Tribe / Ethnic Group (major consumers)', 'Region / State (typical)',
+    'Province / Region (typical)', 'Country',
     'Taste Profile', 'Aroma Description', 'Associated Myths / Beliefs', 'Risk of Knowledge Loss',
     'Data Confidence Level', 'Carbohydrate Source', 'Dominant Microbial Group', 'Major End Products',
-    'Fermentation Time (days)', 'Fermentation Type', 'Alcohol Content (% v/v)', 'pH (reported range)',
+    'Fermentation Time (days)', 'Fermentation Type', 'Type of Fermentation',
+    'Alcohol Content (% v/v)', 'Alcohol Content (%)', 'pH (reported range)',
     'Fermentation Vessel', 'Fermentation Temperature (°C)',
   ])
   const remainingEntries = entries.filter(([k]) => !featuredKeys.has(k))

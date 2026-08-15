@@ -1,5 +1,5 @@
 import { motion } from 'framer-motion'
-import { LayoutDashboard, Table2, Map as MapIcon, FlaskConical } from 'lucide-react'
+import { LayoutDashboard, Table2, Map as MapIcon, FlaskConical, X } from 'lucide-react'
 import ThemeToggle from './ThemeToggle'
 import { onActivateKey } from '../utils/a11y'
 
@@ -19,9 +19,13 @@ const itemVariants = {
   show: { opacity: 1, x: 0, transition: { type: 'spring', stiffness: 340, damping: 28 } },
 }
 
-export default function Sidebar({ view, onChangeView, datasets, activeDataset, onSelectDataset, theme, onToggleTheme }) {
+export default function Sidebar({ view, onChangeView, datasets, activeDataset, onSelectDataset, theme, onToggleTheme, open, onClose }) {
   return (
-    <aside className="sidebar">
+    <aside className={`sidebar ${open ? 'open' : ''}`}>
+      <button className="sidebar-close" onClick={onClose} aria-label="Close menu">
+        <X size={16} />
+      </button>
+
       <motion.div
         className="sidebar-brand"
         initial={{ opacity: 0, y: -6 }}

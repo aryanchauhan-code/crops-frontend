@@ -1,8 +1,10 @@
 import { useRef, useState } from 'react'
-import { indiaMap } from '../utils/indiaStates'
 import { onActivateKey } from '../utils/a11y'
 
-export default function IndiaMap({ counts, maxCount, activeId, onSelect }) {
+// Shared choropleth renderer for any @svg-maps/* dataset (India states,
+// world countries, ...) -- the map data itself is the only thing that
+// varies, so one component covers every geography instead of one per map.
+export default function GeoMap({ mapData, ariaLabel, counts, maxCount, activeId, onSelect }) {
   const [hoveredId, setHoveredId] = useState(null)
   const [tooltip, setTooltip] = useState(null) // { x, y, name, count }
   const wrapRef = useRef(null)
@@ -19,11 +21,11 @@ export default function IndiaMap({ counts, maxCount, activeId, onSelect }) {
   }
 
   return (
-    <div className="india-map-wrap" ref={wrapRef}>
-      <div className="india-map-grid" aria-hidden="true" />
-      <svg viewBox={indiaMap.viewBox} className="india-map-svg" role="img" aria-label="Map of India by state">
+    <div className="geo-map-wrap" ref={wrapRef}>
+      <div className="geo-map-grid" aria-hidden="true" />
+      <svg viewBox={mapData.viewBox} className="geo-map-svg" role="img" aria-label={ariaLabel}>
         <defs>
-          <filter id="state-glow" x="-60%" y="-60%" width="220%" height="220%">
+          <filter id="geo-state-glow" x="-60%" y="-60%" width="220%" height="220%">
             <feGaussianBlur stdDeviation="3.2" result="blur" />
             <feMerge>
               <feMergeNode in="blur" />
@@ -31,7 +33,7 @@ export default function IndiaMap({ counts, maxCount, activeId, onSelect }) {
             </feMerge>
           </filter>
         </defs>
-        {indiaMap.locations.map((loc) => {
+        {mapData.locations.map((loc) => {
           const count = counts[loc.id] || 0
           const t = maxCount > 0 ? count / maxCount : 0
           const isActive = activeId === loc.id
@@ -43,7 +45,7 @@ export default function IndiaMap({ counts, maxCount, activeId, onSelect }) {
               key={loc.id}
               d={loc.path}
               className={[
-                'india-state',
+                'geo-state',
                 count === 0 ? 'is-empty' : '',
                 isActive ? 'is-active' : '',
                 isHovered ? 'is-hovered' : '',
@@ -63,15 +65,15 @@ export default function IndiaMap({ counts, maxCount, activeId, onSelect }) {
       </svg>
 
       {tooltip && (
-        <div className="india-map-tooltip" style={{ left: tooltip.x, top: tooltip.y }}>
-          <span className="india-map-tooltip-name">{tooltip.name}</span>
-          <span className="india-map-tooltip-count">{tooltip.count} beverage{tooltip.count === 1 ? '' : 's'}</span>
+        <div className="geo-map-tooltip" style={{ left: tooltip.x, top: tooltip.y }}>
+          <span className="geo-map-tooltip-name">{tooltip.name}</span>
+          <span className="geo-map-tooltip-count">{tooltip.count} beverage{tooltip.count === 1 ? '' : 's'}</span>
         </div>
       )}
 
-      <div className="india-map-legend">
+      <div className="geo-map-legend">
         <span>Fewer</span>
-        <span className="india-map-legend-bar" />
+        <span className="geo-map-legend-bar" />
         <span>More</span>
       </div>
     </div>

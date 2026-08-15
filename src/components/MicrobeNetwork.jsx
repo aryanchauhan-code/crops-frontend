@@ -296,7 +296,7 @@ export default function MicrobeNetwork({ records, onSelectRecord, onNodeSelect }
             x: e.clientX - rect.left,
             y: e.clientY - rect.top,
             name: node.kind === 'microbe' ? node.name : (node.record['Beverage Name'] || 'Beverage'),
-            sub: node.kind === 'microbe' ? `${node.count} beverage${node.count === 1 ? '' : 's'}` : node.record['Region / State (typical)'] || '',
+            sub: node.kind === 'microbe' ? `${node.count} beverage${node.count === 1 ? '' : 's'}` : (node.record['Region / State (typical)'] || node.record['Province / Region (typical)'] || node.record['Country'] || ''),
           })
         } else {
           setTooltip(null)
@@ -320,7 +320,7 @@ export default function MicrobeNetwork({ records, onSelectRecord, onNodeSelect }
             onNodeSelect?.({
               kind: 'beverage',
               name: p.node.record['Beverage Name'] || 'Beverage',
-              region: p.node.record['Region / State (typical)'] || null,
+              region: p.node.record['Region / State (typical)'] || p.node.record['Province / Region (typical)'] || p.node.record['Country'] || null,
               record: p.node.record,
             })
           }

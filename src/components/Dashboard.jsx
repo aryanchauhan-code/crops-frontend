@@ -9,6 +9,7 @@ import { SkeletonDashboard } from './Skeleton'
 import MicrobeNetwork from './MicrobeNetwork'
 import { buildMicrobeNetwork } from '../utils/microbeNetwork'
 import { classifyMicrobialGroup, parseSeverityLevel } from '../utils/classify'
+import { matchStateIds } from '../utils/indiaStates'
 
 const CHART_COLORS = ['var(--chart-1)', 'var(--chart-2)', 'var(--chart-3)', 'var(--chart-4)', 'var(--chart-5)', 'var(--chart-6)', 'var(--chart-7)', 'var(--chart-8)']
 const MAX_PIE_SLICES = 7
@@ -90,10 +91,10 @@ function buildTopRecords(records, { limit = 8 } = {}) {
   return { rows: scored.slice(0, limit), totalFields }
 }
 
-function buildHeatmap(records) {
+function buildHeatmap(records, getRegionTokens) {
   const stateCounts = {}
   for (const rec of records) {
-    for (const state of new Set(normalizeStateTokens(rec['Region / State (typical)']))) {
+    for (const state of new Set(getRegionTokens(rec))) {
       stateCounts[state] = (stateCounts[state] || 0) + 1
     }
   }
@@ -113,7 +114,7 @@ function buildHeatmap(records) {
     const group = classifyMicrobialGroup(microbe)
     const groupIdx = groupOrder.indexOf(group)
     if (groupIdx === -1) continue
-    for (const state of new Set(normalizeStateTokens(rec['Region / State (typical)']))) {
+    for (const state of new Set(getRegionTokens(rec))) {
       const rowIdx = stateRowIndex.get(state)
       if (rowIdx === undefined) continue
       matrix[rowIdx].cells[groupIdx] += 1
@@ -139,19 +140,31 @@ function buildNetworkInfo(records) {
 }
 
 function computeStats(records) {
-  const states = new Set()
+  // The two datasets carry geography in different fields (India: free-text
+  // "Region / State (typical)" matched against real state names; world data:
+  // a clean "Country" field written by the importer). Detect which one this
+  // record set uses instead of assuming -- keeps the dashboard working for
+  // either without a dataset-name switch.
+  const isCountryDataset = records.some((r) => r['Country'])
+  const getRegionTokens = isCountryDataset
+    ? (rec) => (rec['Country'] ? [rec['Country'].trim()] : [])
+    : (rec) => matchStateIds(rec['Region / State (typical)']) // state IDs -- fine for counting, dedupe doesn't need display names
+  const getChartRegionTokens = isCountryDataset
+    ? getRegionTokens
+    : (rec) => normalizeStateTokens(rec['Region / State (typical)'])
+
+  const geoIds = new Set()
   const tribes = new Set()
   let alcoholSum = 0
   let alcoholCount = 0
 
-  const perState = {}
+  const perRegion = {}
   const perFermentType = {}
 
   for (const rec of records) {
-    const stateTokens = normalizeStateTokens(rec['Region / State (typical)'])
-    for (const state of new Set(stateTokens)) { // de-dupe within one record
-      states.add(state)
-      perState[state] = (perState[state] || 0) + 1
+    for (const token of getRegionTokens(rec)) geoIds.add(token)
+    for (const token of new Set(getChartRegionTokens(rec))) { // de-dupe within one record
+      perRegion[token] = (perRegion[token] || 0) + 1
     }
 
     const tribe = rec['Tribe / Ethnic Group (major consumers)']
@@ -159,20 +172,20 @@ function computeStats(records) {
       tribe.split(';').map((t) => t.trim()).filter(Boolean).forEach((t) => tribes.add(t))
     }
 
-    const alcohol = parseAlcoholMidpoint(rec['Alcohol Content (% v/v)'])
+    const alcohol = parseAlcoholMidpoint(rec['Alcohol Content (% v/v)'] || rec['Alcohol Content (%)'])
     if (alcohol !== null) {
       alcoholSum += alcohol
       alcoholCount += 1
     }
 
-    const fermType = rec['Fermentation Type']
+    const fermType = rec['Fermentation Type'] || rec['Type of Fermentation']
     if (fermType) {
       const key = fermType.split('(')[0].trim() || fermType
       perFermentType[key] = (perFermentType[key] || 0) + 1
     }
   }
 
-  const stateChartData = Object.entries(perState)
+  const geoChartData = Object.entries(perRegion)
     .sort((a, b) => b[1] - a[1])
     .slice(0, 10)
     .map(([name, count]) => ({ name: truncateLabel(name), fullName: name, count }))
@@ -190,13 +203,17 @@ function computeStats(records) {
 
   return {
     total: records.length,
-    stateCount: states.size,
+    isCountryDataset,
+    geoLabel: isCountryDataset ? 'Countries Covered' : 'States Covered',
+    geoChartTitle: isCountryDataset ? 'Beverages by Country' : 'Beverages by State',
+    geoChartSub: isCountryDataset ? 'Top 10 countries by number of recorded beverages' : 'Top 10 states by number of recorded beverages',
+    geoCount: geoIds.size,
     tribeCount: tribes.size,
     avgAlcohol: alcoholCount > 0 ? (alcoholSum / alcoholCount).toFixed(1) : '—',
-    stateChartData,
+    stateChartData: geoChartData,
     fermentTypeChartData,
     topRecords: buildTopRecords(records),
-    heatmap: buildHeatmap(records),
+    heatmap: buildHeatmap(records, getChartRegionTokens),
     networkInfo: buildNetworkInfo(records),
     flavorWords: buildFlavorWords(records),
   }
@@ -230,8 +247,8 @@ export default function Dashboard({ records, loading, onSelectRecord }) {
           <div className="stat-label">Total Records</div>
         </motion.div>
         <motion.div className="stat-card accent-amber" custom={1} variants={cardVariants} initial="hidden" animate="show">
-          <div className="stat-value"><CountUp value={stats.stateCount} /></div>
-          <div className="stat-label">States Covered</div>
+          <div className="stat-value"><CountUp value={stats.geoCount} /></div>
+          <div className="stat-label">{stats.geoLabel}</div>
         </motion.div>
         <motion.div className="stat-card accent-sage" custom={2} variants={cardVariants} initial="hidden" animate="show">
           <div className="stat-value"><CountUp value={stats.tribeCount} /></div>
@@ -245,8 +262,8 @@ export default function Dashboard({ records, loading, onSelectRecord }) {
 
       <div className="chart-row">
         <div className="chart-card">
-          <h3>Beverages by State</h3>
-          <div className="chart-sub">Top 10 states by number of recorded beverages</div>
+          <h3>{stats.geoChartTitle}</h3>
+          <div className="chart-sub">{stats.geoChartSub}</div>
           <ResponsiveContainer width="100%" height={280}>
             <BarChart data={stats.stateChartData} layout="vertical" margin={{ top: 4, left: 10, right: 32, bottom: 4 }} barCategoryGap="34%">
               <defs>
@@ -353,7 +370,7 @@ export default function Dashboard({ records, loading, onSelectRecord }) {
                 return (
                   <tr key={record.id}>
                     <td className="top-records-name">{record['Beverage Name'] || record.id}</td>
-                    <td>{record['Region / State (typical)'] || '—'}</td>
+                    <td>{record['Region / State (typical)'] || record['Country'] || '—'}</td>
                     <td>
                       {severity ? (
                         <span className={`confidence-badge confidence-badge-${severity.level}`}>{severity.label}</span>
@@ -380,8 +397,8 @@ export default function Dashboard({ records, loading, onSelectRecord }) {
 
       <div className="chart-row-secondary">
         <div className="chart-card">
-          <h3>Microbial Group by State</h3>
-          <div className="chart-sub">Top 8 states × dominant microbial group (count of recorded beverages)</div>
+          <h3>Microbial Group by {stats.isCountryDataset ? 'Country' : 'State'}</h3>
+          <div className="chart-sub">Top 8 {stats.isCountryDataset ? 'countries' : 'states'} × dominant microbial group (count of recorded beverages)</div>
           {stats.heatmap.hasData ? (
             <div className="heatmap-scroll">
               <div
@@ -398,7 +415,7 @@ export default function Dashboard({ records, loading, onSelectRecord }) {
               </div>
             </div>
           ) : (
-            <div className="loading">Not enough state/microbial data yet.</div>
+            <div className="loading">Not enough geographic/microbial data yet.</div>
           )}
         </div>
 

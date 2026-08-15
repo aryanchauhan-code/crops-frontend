@@ -1,13 +1,24 @@
 import { useMemo, useState } from 'react'
 import { AnimatePresence, motion } from 'framer-motion'
-import IndiaMap from './IndiaMap'
-import { groupRecordsByState } from '../utils/indiaStates'
+import GeoMap from './GeoMap'
+import { groupRecordsByState, indiaMap } from '../utils/indiaStates'
+import { groupRecordsByCountry, worldMap } from '../utils/worldCountries'
 import { onActivateKey } from '../utils/a11y'
 
 export default function MapView({ records, titleField, onSelectRecord }) {
   const [activeId, setActiveId] = useState(null)
 
-  const { byId, unmatched } = useMemo(() => groupRecordsByState(records), [records])
+  // Datasets carry different geography fields ("Region / State (typical)"
+  // for India, "Country" for the international collection) -- detect which
+  // one this dataset uses from the records themselves rather than assuming.
+  const isCountryDataset = useMemo(() => records.some((r) => r['Country']), [records])
+  const unitWord = isCountryDataset ? 'country' : 'state'
+  const unitWordPlural = isCountryDataset ? 'countries' : 'states'
+
+  const { byId, unmatched } = useMemo(
+    () => (isCountryDataset ? groupRecordsByCountry(records) : groupRecordsByState(records)),
+    [records, isCountryDataset]
+  )
   const counts = useMemo(() => {
     const c = {}
     for (const [id, group] of byId) c[id] = group.records.length
@@ -17,8 +28,15 @@ export default function MapView({ records, titleField, onSelectRecord }) {
   const activeGroup = activeId ? byId.get(activeId) : null
 
   return (
-    <div className="map-shell india-map-shell">
-      <IndiaMap counts={counts} maxCount={maxCount} activeId={activeId} onSelect={setActiveId} />
+    <div className="map-shell geo-map-shell">
+      <GeoMap
+        mapData={isCountryDataset ? worldMap : indiaMap}
+        ariaLabel={isCountryDataset ? 'Map of the world by country' : 'Map of India by state'}
+        counts={counts}
+        maxCount={maxCount}
+        activeId={activeId}
+        onSelect={setActiveId}
+      />
 
       <div className="map-side-panel">
         <AnimatePresence>
@@ -62,13 +80,13 @@ export default function MapView({ records, titleField, onSelectRecord }) {
               transition={{ duration: 0.18 }}
               className="map-side-empty"
             >
-              <p>Select a glowing state to see the beverages recorded there.</p>
-              <p className="map-side-hint">Brighter states have more recorded beverages.</p>
+              <p>Select a glowing {unitWord} to see the beverages recorded there.</p>
+              <p className="map-side-hint">Brighter {unitWordPlural} have more recorded beverages.</p>
               {unmatched > 0 && (
                 <p className="map-side-warning">
                   {unmatched} record{unmatched === 1 ? '' : 's'} {unmatched === 1 ? "doesn't" : "don't"} name a
-                  recognizable state, so {unmatched === 1 ? "it isn't" : "they aren't"} shown here — still visible
-                  in Table view.
+                  recognizable {unitWord}, so {unmatched === 1 ? "it isn't" : "they aren't"} shown here — still
+                  visible in Table view.
                 </p>
               )}
             </motion.div>

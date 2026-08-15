@@ -1,6 +1,7 @@
 import { useEffect, useState, useCallback } from 'react'
 import { AnimatePresence, motion, MotionConfig } from 'framer-motion'
 import { Toaster, toast } from 'sonner'
+import { Menu } from 'lucide-react'
 import { api } from './api/client'
 import { useTheme } from './hooks/useTheme'
 import Sidebar from './components/Sidebar'
@@ -19,6 +20,7 @@ export default function App() {
   const { theme, toggleTheme } = useTheme()
   const [view, setView] = useState('dashboard') // 'dashboard' | 'table' | 'map'
   const [paletteOpen, setPaletteOpen] = useState(false)
+  const [sidebarOpen, setSidebarOpen] = useState(false)
 
   const [datasets, setDatasets] = useState([])
   const [activeDataset, setActiveDataset] = useState(null)
@@ -49,12 +51,13 @@ export default function App() {
   const loadDatasets = useCallback(async () => {
     try {
       const data = await api.listDatasets()
-      setDatasets(data)
-      if (!activeDataset && data.length > 0) {
-        setActiveDataset(data[0].name)
+      const visible = data.filter((d) => d.name !== 'assam')
+      setDatasets(visible)
+      if (!activeDataset && visible.length > 0) {
+        setActiveDataset(visible[0].name)
       }
     } catch (err) {
-      setError('Could not reach the API. Is the FastAPI backend running on port 8000?')
+      setError('Could not reach the API. Is the backend running?')
     }
   }, [activeDataset])
 
@@ -109,6 +112,12 @@ export default function App() {
     setActiveDataset(name)
     setPage(1)
     setSearch('')
+    setSidebarOpen(false)
+  }
+
+  const handleChangeView = (v) => {
+    setView(v)
+    setSidebarOpen(false)
   }
 
   const handleSave = async (payload) => {
@@ -188,15 +197,26 @@ export default function App() {
         onViewRecord={setViewingRecord}
       />
 
+    <div className="mobile-topbar">
+      <button className="mobile-nav-toggle" onClick={() => setSidebarOpen(true)} aria-label="Open menu">
+        <Menu size={18} />
+      </button>
+      <span className="mobile-topbar-title">Fermentation Atlas</span>
+    </div>
+
     <div className="app-shell">
+      {sidebarOpen && <div className="sidebar-backdrop" onClick={() => setSidebarOpen(false)} />}
+
       <Sidebar
         view={view}
-        onChangeView={setView}
+        onChangeView={handleChangeView}
         datasets={datasets}
         activeDataset={activeDataset}
         onSelectDataset={handleSelectDataset}
         theme={theme}
         onToggleTheme={toggleTheme}
+        open={sidebarOpen}
+        onClose={() => setSidebarOpen(false)}
       />
 
       <main className="main-panel">
