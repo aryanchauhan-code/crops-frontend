@@ -250,7 +250,7 @@ export default function App() {
             No datasets found yet. Import your data with <code>backend/scripts/bulk_import_all.py</code> to get started.
           </div>
         ) : (
-          <AnimatePresence>
+          <AnimatePresence mode="wait">
             <motion.div
               key={view}
               initial={{ opacity: 0, y: 8 }}

@@ -14,9 +14,12 @@ const listVariants = {
   show: { transition: { staggerChildren: 0.045, delayChildren: 0.05 } },
 }
 
+// No opacity in the variants -- text stays readable even if this animation
+// ever stalls mid-transition (seen intermittently on slower connections);
+// the slide is a nice-to-have, visibility isn't.
 const itemVariants = {
-  hidden: { opacity: 0, x: -8 },
-  show: { opacity: 1, x: 0, transition: { type: 'spring', stiffness: 340, damping: 28 } },
+  hidden: { x: -8 },
+  show: { x: 0, transition: { type: 'spring', stiffness: 340, damping: 28 } },
 }
 
 export default function Sidebar({ view, onChangeView, datasets, activeDataset, onSelectDataset, theme, onToggleTheme, open, onClose }) {
