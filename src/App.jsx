@@ -1,4 +1,4 @@
-import { useEffect, useState, useCallback } from 'react'
+import { useEffect, useState, useCallback, useMemo } from 'react'
 import { AnimatePresence, motion, MotionConfig } from 'framer-motion'
 import { Toaster, toast } from 'sonner'
 import { Menu } from 'lucide-react'
@@ -159,6 +159,13 @@ export default function App() {
 
   const totalPages = Math.max(1, Math.ceil(total / PAGE_SIZE))
 
+  // Shared by Dashboard and Map -- both work off the full dataset rather
+  // than one paginated page, so the same search box narrows what they show.
+  const filteredAllRecords = useMemo(
+    () => (search ? allRecords.filter((r) => JSON.stringify(r).toLowerCase().includes(search.toLowerCase())) : allRecords),
+    [allRecords, search]
+  )
+
   const viewTitles = {
     dashboard: 'Dashboard',
     table: 'Records',
@@ -228,7 +235,7 @@ export default function App() {
             </div>
           </div>
 
-          {activeDataset && view !== 'dashboard' && (
+          {activeDataset && (
             <div className="toolbar">
               <input
                 className="search-input"
@@ -236,9 +243,11 @@ export default function App() {
                 value={search}
                 onChange={(e) => { setSearch(e.target.value); setPage(1) }}
               />
-              <button className="btn btn-primary" onClick={() => setEditingRecord({})}>
-                + Add Record
-              </button>
+              {view !== 'dashboard' && (
+                <button className="btn btn-primary" onClick={() => setEditingRecord({})}>
+                  + Add Record
+                </button>
+              )}
             </div>
           )}
         </div>
@@ -257,13 +266,13 @@ export default function App() {
             transition={{ duration: 0.2 }}
           >
             {view === 'dashboard' ? (
-              <Dashboard records={allRecords} loading={allRecordsLoading} onSelectRecord={setViewingRecord} />
+              <Dashboard records={filteredAllRecords} loading={allRecordsLoading} onSelectRecord={setViewingRecord} search={search} />
             ) : view === 'map' ? (
               allRecordsLoading ? (
                 <SkeletonMap />
               ) : (
                 <MapView
-                  records={search ? allRecords.filter((r) => JSON.stringify(r).toLowerCase().includes(search.toLowerCase())) : allRecords}
+                  records={filteredAllRecords}
                   titleField={activeMeta?.title_field}
                   onSelectRecord={setViewingRecord}
                 />

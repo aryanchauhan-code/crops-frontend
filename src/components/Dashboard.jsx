@@ -224,7 +224,7 @@ const cardVariants = {
   show: (i) => ({ opacity: 1, y: 0, transition: { duration: 0.35, delay: i * 0.05 } }),
 }
 
-export default function Dashboard({ records, loading, onSelectRecord }) {
+export default function Dashboard({ records, loading, onSelectRecord, search }) {
   const stats = useMemo(() => computeStats(records), [records])
   const maxFlavorCount = stats.flavorWords[0]?.count ?? 1
   const minFlavorCount = stats.flavorWords[stats.flavorWords.length - 1]?.count ?? 1
@@ -236,7 +236,13 @@ export default function Dashboard({ records, loading, onSelectRecord }) {
   }
 
   if (records.length === 0) {
-    return <div className="empty-state">No records yet — import your data to see the dashboard.</div>
+    return (
+      <div className="empty-state">
+        {search
+          ? `No records match "${search}".`
+          : 'No records yet — import your data to see the dashboard.'}
+      </div>
+    )
   }
 
   return (
