@@ -250,49 +250,46 @@ export default function App() {
             No datasets found yet. Import your data with <code>backend/scripts/bulk_import_all.py</code> to get started.
           </div>
         ) : (
-          <AnimatePresence mode="wait">
-            <motion.div
-              key={view}
-              initial={{ opacity: 0, y: 8 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -8 }}
-              transition={{ duration: 0.2 }}
-            >
-              {view === 'dashboard' ? (
-                <Dashboard records={allRecords} loading={allRecordsLoading} onSelectRecord={setViewingRecord} />
-              ) : view === 'map' ? (
-                allRecordsLoading ? (
-                  <SkeletonMap />
-                ) : (
-                  <MapView
-                    records={search ? allRecords.filter((r) => JSON.stringify(r).toLowerCase().includes(search.toLowerCase())) : allRecords}
-                    titleField={activeMeta?.title_field}
-                    onSelectRecord={setViewingRecord}
-                  />
-                )
-              ) : loading ? (
-                <SkeletonTable />
+          <motion.div
+            key={view}
+            initial={{ opacity: 0, y: 8 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.2 }}
+          >
+            {view === 'dashboard' ? (
+              <Dashboard records={allRecords} loading={allRecordsLoading} onSelectRecord={setViewingRecord} />
+            ) : view === 'map' ? (
+              allRecordsLoading ? (
+                <SkeletonMap />
               ) : (
-                <>
-                  <DataTable
-                    records={records}
-                    fields={fields}
-                    titleField={activeMeta?.title_field}
-                    onView={setViewingRecord}
-                    onEdit={setEditingRecord}
-                    onDelete={handleDelete}
-                  />
-                  <div className="pagination">
-                    <span>Page {page} of {totalPages}</span>
-                    <div style={{ display: 'flex', gap: 8 }}>
-                      <button className="btn btn-ghost" disabled={page <= 1} onClick={() => setPage((p) => p - 1)}>Prev</button>
-                      <button className="btn btn-ghost" disabled={page >= totalPages} onClick={() => setPage((p) => p + 1)}>Next</button>
-                    </div>
+                <MapView
+                  records={search ? allRecords.filter((r) => JSON.stringify(r).toLowerCase().includes(search.toLowerCase())) : allRecords}
+                  titleField={activeMeta?.title_field}
+                  onSelectRecord={setViewingRecord}
+                />
+              )
+            ) : loading ? (
+              <SkeletonTable />
+            ) : (
+              <>
+                <DataTable
+                  records={records}
+                  fields={fields}
+                  titleField={activeMeta?.title_field}
+                  onView={setViewingRecord}
+                  onEdit={setEditingRecord}
+                  onDelete={handleDelete}
+                />
+                <div className="pagination">
+                  <span>Page {page} of {totalPages}</span>
+                  <div style={{ display: 'flex', gap: 8 }}>
+                    <button className="btn btn-ghost" disabled={page <= 1} onClick={() => setPage((p) => p - 1)}>Prev</button>
+                    <button className="btn btn-ghost" disabled={page >= totalPages} onClick={() => setPage((p) => p + 1)}>Next</button>
                   </div>
-                </>
-              )}
-            </motion.div>
-          </AnimatePresence>
+                </div>
+              </>
+            )}
+          </motion.div>
         )}
       </main>
     </div>
