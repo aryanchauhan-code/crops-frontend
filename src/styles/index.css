@@ -233,7 +233,7 @@ textarea:focus-visible,
   .network-info-grid, .network-info-grid-2, .profile-gauges { grid-template-columns: repeat(2, 1fr); }
 
   .map-shell { grid-template-columns: 1fr; height: auto; }
-  .geo-map-wrap { min-height: 380px; }
+  .geo-map-wrap, .geo-globe-wrap { min-height: 380px; }
   .map-side-panel { max-height: 340px; }
 
   .toolbar { flex-wrap: wrap; }
@@ -951,6 +951,37 @@ tbody tr:hover { background: var(--panel-hover); }
   width: 100%;
   height: 100%;
   display: block;
+}
+
+/* ---------- 3D globe (world/India map view) ---------- */
+
+.geo-globe-wrap {
+  position: relative;
+  height: 100%;
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius-lg);
+  overflow: hidden;
+  background: #000814;
+  cursor: grab;
+}
+.geo-globe-wrap:active { cursor: grabbing; }
+
+.geo-globe-point {
+  --point-color: var(--teal);
+  position: relative;
+  transform: translate(-50%, -50%);
+  border-radius: 50%;
+  background: radial-gradient(circle, var(--point-color) 0%, var(--point-color) 35%, transparent 75%);
+  box-shadow: 0 0 12px 2px var(--point-color);
+  cursor: pointer;
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
+}
+.geo-globe-point:hover {
+  transform: translate(-50%, -50%) scale(1.35);
+  box-shadow: 0 0 18px 4px var(--point-color);
+}
+.geo-globe-point.is-active {
+  box-shadow: 0 0 22px 6px var(--point-color), 0 0 0 2px rgba(255, 255, 255, 0.85) inset;
 }
 
 .geo-state {

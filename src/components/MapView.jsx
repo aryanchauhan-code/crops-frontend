@@ -1,8 +1,10 @@
 import { useMemo, useState } from 'react'
 import { AnimatePresence, motion } from 'framer-motion'
-import GeoMap from './GeoMap'
-import { groupRecordsByState, indiaMap } from '../utils/indiaStates'
-import { groupRecordsByCountry, worldMap } from '../utils/worldCountries'
+import Globe3D from './Globe3D'
+import { groupRecordsByState } from '../utils/indiaStates'
+import { groupRecordsByCountry } from '../utils/worldCountries'
+import { INDIA_STATE_CENTROIDS } from '../utils/indiaCentroids'
+import { WORLD_COUNTRY_CENTROIDS } from '../utils/worldCentroids'
 import { onActivateKey } from '../utils/a11y'
 
 export default function MapView({ records, titleField, onSelectRecord }) {
@@ -19,24 +21,21 @@ export default function MapView({ records, titleField, onSelectRecord }) {
     () => (isCountryDataset ? groupRecordsByCountry(records) : groupRecordsByState(records)),
     [records, isCountryDataset]
   )
-  const counts = useMemo(() => {
-    const c = {}
-    for (const [id, group] of byId) c[id] = group.records.length
-    return c
-  }, [byId])
-  const maxCount = Math.max(0, ...Object.values(counts))
+  const centroids = isCountryDataset ? WORLD_COUNTRY_CENTROIDS : INDIA_STATE_CENTROIDS
+  const regions = useMemo(() => {
+    const out = []
+    for (const [id, group] of byId) {
+      const centroid = centroids[id]
+      if (!centroid) continue // no known coordinate for this id -- skip rather than plot at (0,0)
+      out.push({ id, name: group.name, count: group.records.length, lat: centroid[0], lng: centroid[1] })
+    }
+    return out
+  }, [byId, centroids])
   const activeGroup = activeId ? byId.get(activeId) : null
 
   return (
     <div className="map-shell geo-map-shell">
-      <GeoMap
-        mapData={isCountryDataset ? worldMap : indiaMap}
-        ariaLabel={isCountryDataset ? 'Map of the world by country' : 'Map of India by state'}
-        counts={counts}
-        maxCount={maxCount}
-        activeId={activeId}
-        onSelect={setActiveId}
-      />
+      <Globe3D regions={regions} activeId={activeId} onSelect={setActiveId} />
 
       <div className="map-side-panel">
         <AnimatePresence>
