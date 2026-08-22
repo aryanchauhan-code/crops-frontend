@@ -7,6 +7,9 @@ const BORDERS_URL = {
   state: '/data/india-state-borders.json',
 }
 
+const EARTH_TEXTURE_URL = '/textures/earth-night.jpg'
+const EARTH_BUMP_URL = '/textures/earth-topology.png'
+
 function hexToRgb(hex) {
   const m = hex.replace('#', '').match(/.{1,2}/g)
   if (!m) return [52, 214, 196]
@@ -110,6 +113,14 @@ export default function Globe3D({ regions, activeId, onSelect, geoType }) {
     sun.position.set(1, 1, 1)
     scene.add(sun)
 
+    // Cap the renderer's pixel ratio -- letting three.js render at a raw
+    // 3x/4x devicePixelRatio (common on modern laptop/Retina screens) costs
+    // far more GPU work than the visual gain is worth and is the main cause
+    // of stutter while rotating/zooming. 2x keeps text/edges crisp without
+    // the extra cost.
+    const renderer = globe.renderer()
+    renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2))
+
     const controls = globe.controls()
     controls.autoRotate = true
     controls.autoRotateSpeed = 0.4
@@ -125,8 +136,9 @@ export default function Globe3D({ regions, activeId, onSelect, geoType }) {
       <Globe
         key={geoType}
         ref={globeRef}
-        globeImageUrl="https://unpkg.com/three-globe/example/img/earth-dark.jpg"
-        bumpImageUrl="https://unpkg.com/three-globe/example/img/earth-topology.png"
+        rendererConfig={{ antialias: true, alpha: true, powerPreference: 'high-performance' }}
+        globeImageUrl={EARTH_TEXTURE_URL}
+        bumpImageUrl={EARTH_BUMP_URL}
         backgroundColor="rgba(0,0,0,0)"
         atmosphereColor={accentColor}
         atmosphereAltitude={0.18}
