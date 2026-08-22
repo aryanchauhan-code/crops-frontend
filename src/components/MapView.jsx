@@ -35,10 +35,15 @@ export default function MapView({ records, titleField, onSelectRecord }) {
 
   return (
     <div className="map-shell geo-map-shell">
-      <Globe3D regions={regions} activeId={activeId} onSelect={setActiveId} />
+      <Globe3D
+        regions={regions}
+        activeId={activeId}
+        onSelect={setActiveId}
+        geoType={isCountryDataset ? 'country' : 'state'}
+      />
 
       <div className="map-side-panel">
-        <AnimatePresence>
+        <AnimatePresence mode="wait">
           {activeGroup ? (
             <motion.div
               key={activeGroup.id}

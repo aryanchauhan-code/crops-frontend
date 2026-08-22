@@ -966,6 +966,19 @@ tbody tr:hover { background: var(--panel-hover); }
 }
 .geo-globe-wrap:active { cursor: grabbing; }
 
+.geo-globe-tooltip {
+  background: var(--panel);
+  color: var(--text);
+  border: 1px solid var(--border-strong);
+  border-radius: 8px;
+  padding: 6px 10px;
+  font-family: var(--font-body);
+  font-size: 12px;
+  line-height: 1.5;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.25);
+}
+.geo-globe-tooltip b { color: var(--teal); }
+
 .geo-globe-point {
   --point-color: var(--teal);
   position: relative;
