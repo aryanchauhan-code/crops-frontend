@@ -1,6 +1,9 @@
+
+
 import { useEffect, useMemo, useRef, useState } from 'react'
 import Globe from 'react-globe.gl'
 import { AmbientLight, DirectionalLight } from 'three'
+import { createStarfieldDataUrl } from '../utils/starfield'
 
 const BORDERS_URL = {
   country: '/data/world-country-borders.json',
@@ -27,6 +30,10 @@ export default function Globe3D({ regions, activeId, onSelect, geoType }) {
   const wrapRef = useRef(null)
   const [size, setSize] = useState({ width: 0, height: 0 })
   const [borders, setBorders] = useState(null)
+  // Generated once -- a real WebGL skybox sphere, not a flat CSS background,
+  // so stars keep correct parallax as the globe rotates instead of looking
+  // painted on.
+  const starfieldUrl = useMemo(() => createStarfieldDataUrl(), [])
 
   const styles = typeof window !== 'undefined' ? getComputedStyle(document.documentElement) : null
   const accentColor = styles?.getPropertyValue('--teal').trim() || '#34D6C4'
@@ -74,9 +81,12 @@ export default function Globe3D({ regions, activeId, onSelect, geoType }) {
     return isActive ? accentColorDim : `rgba(${r}, ${g}, ${b}, ${alpha})`
   }
 
-  // Glowing point + pulse ring only for the top regions -- with shaded
-  // polygons doing the main work, markers are now just an accent instead of
-  // the only way to see where the data is.
+  // Point + pulse ring only for the top regions -- with shaded polygons
+  // doing the main work, markers are now just an accent instead of the only
+  // way to see where the data is. Rendered as real WebGL geometry (not DOM
+  // elements pasted over the canvas) so they're depth-tested against the
+  // globe like everything else -- a marker on the far side is properly
+  // hidden behind the sphere instead of floating on top of it.
   const topRegions = useMemo(
     () => [...regions].sort((a, b) => b.count - a.count).slice(0, 8),
     [regions]
@@ -85,18 +95,13 @@ export default function Globe3D({ regions, activeId, onSelect, geoType }) {
     () => topRegions.map((r) => ({ ...r, isActive: r.id === activeId })),
     [topRegions, activeId]
   )
-  const makePointElement = (d) => {
-    const el = document.createElement('div')
-    const size = 8 + 14 * (d.count / maxCount)
-    const color = d.isActive ? accentColorDim : accentColor
-    el.className = 'geo-globe-point' + (d.isActive ? ' is-active' : '')
-    el.style.width = `${size}px`
-    el.style.height = `${size}px`
-    el.style.setProperty('--point-color', color)
-    el.title = `${d.name} — ${d.count} beverage${d.count === 1 ? '' : 's'}`
-    el.addEventListener('click', () => onSelect(d.id))
-    return el
+  const pointColor = (d) => {
+    if (d.isActive) return accentColorDim
+    const [r, g, b] = accentRgb
+    return `rgba(${r}, ${g}, ${b}, ${0.55 + 0.45 * (d.count / maxCount)})`
   }
+  const pointRadius = (d) => (d.isActive ? 0.55 : 0.3 + 0.35 * (d.count / maxCount))
+  const pointAltitude = (d) => (d.isActive ? 0.05 : 0.018 + 0.045 * (d.count / maxCount))
   const ringsData = useMemo(() => topRegions.slice(0, 6), [topRegions])
 
   useEffect(() => {
@@ -112,6 +117,12 @@ export default function Globe3D({ regions, activeId, onSelect, geoType }) {
     const sun = new DirectionalLight(0xffffff, 0.9)
     sun.position.set(1, 1, 1)
     scene.add(sun)
+    // A dim light from the opposite side so the night-side terminator isn't
+    // a hard black line -- a flat, evenly-lit sphere is a large part of what
+    // reads as "cheap"; a soft fill on the dark side gives it real depth.
+    const fill = new DirectionalLight(0x3a5a7a, 0.25)
+    fill.position.set(-1, -0.4, -1)
+    scene.add(fill)
 
     // Cap the renderer's pixel ratio -- letting three.js render at a raw
     // 3x/4x devicePixelRatio (common on modern laptop/Retina screens) costs
@@ -139,9 +150,10 @@ export default function Globe3D({ regions, activeId, onSelect, geoType }) {
         rendererConfig={{ antialias: true, alpha: true, powerPreference: 'high-performance' }}
         globeImageUrl={EARTH_TEXTURE_URL}
         bumpImageUrl={EARTH_BUMP_URL}
+        backgroundImageUrl={starfieldUrl}
         backgroundColor="rgba(0,0,0,0)"
         atmosphereColor={accentColor}
-        atmosphereAltitude={0.18}
+        atmosphereAltitude={0.2}
         polygonsData={polygons}
         polygonGeoJsonGeometry={(d) => d.feature.geometry}
         polygonCapColor={capColor}
@@ -151,10 +163,17 @@ export default function Globe3D({ regions, activeId, onSelect, geoType }) {
         polygonLabel={(d) => `<div class="geo-globe-tooltip"><b>${d.name}</b><br/>${d.count} beverage${d.count === 1 ? '' : 's'}</div>`}
         onPolygonClick={(d) => d.count > 0 && onSelect(d.id)}
         polygonsTransitionDuration={200}
-        htmlElementsData={pointsData}
-        htmlLat={(d) => d.lat}
-        htmlLng={(d) => d.lng}
-        htmlElement={makePointElement}
+        pointsData={pointsData}
+        pointLat={(d) => d.lat}
+        pointLng={(d) => d.lng}
+        pointColor={pointColor}
+        pointRadius={pointRadius}
+        pointAltitude={pointAltitude}
+        pointResolution={32}
+        pointsMerge={false}
+        pointLabel={(d) => `<div class="geo-globe-tooltip"><b>${d.name}</b><br/>${d.count} beverage${d.count === 1 ? '' : 's'}</div>`}
+        onPointClick={(d) => onSelect(d.id)}
+        pointsTransitionDuration={300}
         ringsData={ringsData}
         ringLat={(d) => d.lat}
         ringLng={(d) => d.lng}

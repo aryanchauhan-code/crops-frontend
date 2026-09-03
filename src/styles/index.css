@@ -979,24 +979,6 @@ tbody tr:hover { background: var(--panel-hover); }
 }
 .geo-globe-tooltip b { color: var(--teal); }
 
-.geo-globe-point {
-  --point-color: var(--teal);
-  position: relative;
-  transform: translate(-50%, -50%);
-  border-radius: 50%;
-  background: radial-gradient(circle, var(--point-color) 0%, var(--point-color) 35%, transparent 75%);
-  box-shadow: 0 0 12px 2px var(--point-color);
-  cursor: pointer;
-  transition: transform 0.15s ease, box-shadow 0.15s ease;
-}
-.geo-globe-point:hover {
-  transform: translate(-50%, -50%) scale(1.35);
-  box-shadow: 0 0 18px 4px var(--point-color);
-}
-.geo-globe-point.is-active {
-  box-shadow: 0 0 22px 6px var(--point-color), 0 0 0 2px rgba(255, 255, 255, 0.85) inset;
-}
-
 .geo-state {
   fill: rgba(52, 214, 196, calc(0.08 + var(--t, 0) * 0.68));
   stroke: rgba(150, 210, 220, 0.28);
